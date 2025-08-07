@@ -61,8 +61,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 			// 账号不能重复
 			QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
 			userQueryWrapper.eq("userAccount",userAccount);
-			Long count = this.baseMapper.selectCount(userQueryWrapper);
-			if (count > 0) {
+			// todo
+			User user1 = this.baseMapper.selectOne(userQueryWrapper);
+			if (user1 != null) {
 				throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户账号重复");
 			}
 			// 密码加密

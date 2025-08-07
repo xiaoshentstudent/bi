@@ -4,6 +4,8 @@ package com.yupi.yubibackend.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
+import com.yupi.yubibackend.ai.AiCodeGeneratorService;
+import com.yupi.yubibackend.ai.AiCodeGeneratorServiceFactory;
 import com.yupi.yubibackend.annotation.AuthCheck;
 import com.yupi.yubibackend.common.BaseResponse;
 import com.yupi.yubibackend.common.DeleteRequest;
@@ -16,6 +18,8 @@ import com.yupi.yubibackend.exception.ThrowUtils;
 import com.yupi.yubibackend.model.dto.chart.*;
 import com.yupi.yubibackend.model.entity.Chart;
 import com.yupi.yubibackend.model.entity.User;
+import com.yupi.yubibackend.model.vo.AiResponse;
+import com.yupi.yubibackend.model.vo.LoginUserVO;
 import com.yupi.yubibackend.service.ChartService;
 import com.yupi.yubibackend.service.UserService;
 import com.yupi.yubibackend.utils.ExcelUtils;
@@ -42,6 +46,9 @@ public class ChartController {
 
 	@Resource
 	private UserService userService;
+
+	@Resource
+	private AiCodeGeneratorService aiCodeGeneratorService;
 
 	private final static Gson GSON = new Gson();
 
@@ -135,8 +142,51 @@ public class ChartController {
 		//ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
 		// 如果名称不为空，并且名称长度大于100，就抛出异常，并给出提示
 		ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
-		String string = ExcelUtils.excelToCsv(multipartFile);
-		return ResultUtils.success(string);
+		String csvData = ExcelUtils.excelToCsv(multipartFile);
+		Long userId = userService.getLoginUser(request).getId();
+		// 构造用户信息
+		StringBuilder userInput = new StringBuilder();
+		userInput.append("分析需求:").append("\n");
+		// 拼接分析目标
+		String userGoal = goal;
+		// 如果图表类型为空
+		if (StringUtils.isNotBlank(chartType)) {
+			userGoal += "请使用" + chartType;
+		}
+		userInput.append(userGoal).append("\n");
+		userInput.append("原始数据:").append("\n");
+		userInput.append(csvData).append("\n");
+
+
+		String result = aiCodeGeneratorService.generateHtmlCode(userInput);
+
+		// 对返回结果进行拆分
+		String[] split = result.split("【【【【【");
+		// 拆分后进行校验
+		if (split.length < 3) {
+			throw new BusinessException(ErrorCode.PARAMS_ERROR, "生成失败");
+		}
+		String genChart = split[1].intern();
+		String genResult = split[2].intern();
+		// 保存到数据库
+		Chart chart = new Chart();
+		chart.setName(name);
+		chart.setGoal(goal);
+		chart.setChartData(csvData);
+		chart.setChartType(chartType);
+		chart.setGenChart(genChart);
+		chart.setGenResult(genResult);
+		chart.setUserId(userId);
+		boolean save = chartService.save(chart);
+		if (!save) {
+			throw new BusinessException(ErrorCode.OPERATION_ERROR, "保存失败");
+		}
+		// 构造返回结果，供前端调用
+		AiResponse aiResponse = new AiResponse();
+		aiResponse.setGenChart(genChart);
+		aiResponse.setGenResult(genResult);
+		aiResponse.setChartId(chart.getId());
+		return ResultUtils.success(aiResponse.toString());
 
 	}
 
