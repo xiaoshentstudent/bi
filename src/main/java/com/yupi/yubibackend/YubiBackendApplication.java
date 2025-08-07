@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @MapperScan("com.yupi.yubibackend.mapper")
 @EnableScheduling
-@EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 public class YubiBackendApplication {
 
 	public static void main(String[] args) {

@@ -13,22 +13,24 @@ import com.yupi.yubibackend.constant.UserConstant;
 import com.yupi.yubibackend.exception.BusinessException;
 import com.yupi.yubibackend.exception.ErrorCode;
 import com.yupi.yubibackend.exception.ThrowUtils;
-import com.yupi.yubibackend.model.dto.chart.ChartAddRequest;
-import com.yupi.yubibackend.model.dto.chart.ChartEditRequest;
-import com.yupi.yubibackend.model.dto.chart.ChartQueryRequest;
-import com.yupi.yubibackend.model.dto.chart.ChartUpdateRequest;
+import com.yupi.yubibackend.model.dto.chart.*;
 import com.yupi.yubibackend.model.entity.Chart;
 import com.yupi.yubibackend.model.entity.User;
 import com.yupi.yubibackend.service.ChartService;
 import com.yupi.yubibackend.service.UserService;
+import com.yupi.yubibackend.utils.ExcelUtils;
 import com.yupi.yubibackend.utils.SqlUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
 
 @RestController
 @RequestMapping("/chart")
@@ -115,22 +117,29 @@ public class ChartController {
 	}
 
 	/**
-	 * 根据 id 获取
+	 * 智能分析
 	 *
-	 * @param id
+	 * @param multipartFile
+	 * @param genChartByAiRequest
+	 * @param request
 	 * @return
 	 */
-	@GetMapping("/get")
-	public BaseResponse<Chart> getChartById(long id, HttpServletRequest request) {
-		if (id <= 0) {
-			throw new BusinessException(ErrorCode.PARAMS_ERROR);
-		}
-		Chart chart = chartService.getById(id);
-		if (chart == null) {
-			throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-		}
-		return ResultUtils.success(chart);
+	@PostMapping("/gen")
+	public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+											 GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+		String name = genChartByAiRequest.getName();
+		String goal = genChartByAiRequest.getGoal();
+		String chartType = genChartByAiRequest.getChartType();
+		// 校验
+		// todo  如果分析目标为空，就抛出请求参数错误异常，并给出提示
+		//ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
+		// 如果名称不为空，并且名称长度大于100，就抛出异常，并给出提示
+		ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
+		String string = ExcelUtils.excelToCsv(multipartFile);
+		return ResultUtils.success(string);
+
 	}
+
 
 	/**
 	 * 分页获取列表（封装类）
@@ -175,6 +184,7 @@ public class ChartController {
 		return ResultUtils.success(chartPage);
 	}
 
+
 	// endregion
 
 	/**
@@ -216,13 +226,16 @@ public class ChartController {
 			return queryWrapper;
 		}
 		Long id = chartQueryRequest.getId();
+		String name = chartQueryRequest.getName();
 		String goal = chartQueryRequest.getGoal();
 		String chartType = chartQueryRequest.getChartType();
 		Long userId = chartQueryRequest.getUserId();
 		String sortField = chartQueryRequest.getSortField();
 		String sortOrder = chartQueryRequest.getSortOrder();
 
+
 		queryWrapper.eq(id != null && id > 0, "id", id);
+		queryWrapper.like(StringUtils.isNotBlank(name), "name", name);
 		queryWrapper.eq(StringUtils.isNotBlank(goal), "goal", goal);
 		queryWrapper.eq(StringUtils.isNotBlank(chartType), "chartType", chartType);
 		queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
