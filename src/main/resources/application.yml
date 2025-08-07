@@ -37,8 +37,8 @@ mybatis-plus:
 langchain4j:
   open-ai:
     chat-model:
-      base-url: https://api.deepseek.com
-      api-key: sk-d1f2e749ea6c4b10987c6ee8de669168
-      model-name: deepseek-chat
+      base-url: 
+      api-key:
+      model-name: 
       log-requests: true
       log-responses: true
