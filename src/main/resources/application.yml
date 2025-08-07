@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: yubi-backend
+    # mysql
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/yu_ai_code_mother
+    username: root
+    password: 123456
+server:
+  port: 7878
+  servlet:
+    context-path: /api
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.yupi.yubibackend.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
