@@ -19,7 +19,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,'name',goal,chartData,
+        id,`name`,goal,chartData,
         chartType,genChart,genResult,
         userId,createTime,updateTime,
         isDelete

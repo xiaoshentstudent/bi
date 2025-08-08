@@ -5,6 +5,7 @@
 <mapper namespace="com.yupi.yubibackend.mapper.UserMapper">
 
     <resultMap id="BaseResultMap" type="com.yupi.yubibackend.model.entity.User">
+
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="userAccount" column="userAccount" jdbcType="VARCHAR"/>
             <result property="userPassword" column="userPassword" jdbcType="VARCHAR"/>

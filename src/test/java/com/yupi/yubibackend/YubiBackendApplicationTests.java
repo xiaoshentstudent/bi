@@ -1,5 +1,8 @@
 package com.yupi.yubibackend;
 
+import com.yupi.yubibackend.model.entity.User;
+import com.yupi.yubibackend.service.UserService;
+import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.DigestUtils;
@@ -7,6 +10,9 @@ import org.springframework.util.DigestUtils;
 @SpringBootTest
 class YubiBackendApplicationTests {
 
+
+	@Resource
+	private UserService userService;
 	@Test
 	void contextLoads() {
 	}
@@ -21,6 +27,13 @@ class YubiBackendApplicationTests {
 		String string = DigestUtils.md5DigestAsHex((password + SALT).getBytes());
 		// Print the encrypted string
 		System.out.println(string);
+	}
+
+	@Test
+	public void test(){
+
+		User byId = userService.getById(1L);
+		System.out.println(byId);
 	}
 
 

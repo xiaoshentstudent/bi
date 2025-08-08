@@ -6,7 +6,6 @@ import com.yupi.yubibackend.model.dto.user.UserQueryRequest;
 import com.yupi.yubibackend.model.dto.user.UserRegisterRequest;
 import com.yupi.yubibackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.yupi.yubibackend.model.enums.UserRoleEnum;
 import com.yupi.yubibackend.model.vo.LoginUserVO;
 import com.yupi.yubibackend.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
