@@ -1,6 +1,7 @@
 package com.yupi.yubibackend.controller;
 
 
+import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
@@ -15,6 +16,7 @@ import com.yupi.yubibackend.constant.UserConstant;
 import com.yupi.yubibackend.exception.BusinessException;
 import com.yupi.yubibackend.exception.ErrorCode;
 import com.yupi.yubibackend.exception.ThrowUtils;
+import com.yupi.yubibackend.manager.RedisLimiterManager;
 import com.yupi.yubibackend.model.dto.chart.*;
 import com.yupi.yubibackend.model.entity.Chart;
 import com.yupi.yubibackend.model.entity.User;
@@ -30,11 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/chart")
@@ -49,6 +55,9 @@ public class ChartController {
 
 	@Resource
 	private AiCodeGeneratorService aiCodeGeneratorService;
+
+	@Resource
+	private RedisLimiterManager redisLimiterManager;
 
 	private final static Gson GSON = new Gson();
 
@@ -139,9 +148,31 @@ public class ChartController {
 		String chartType = genChartByAiRequest.getChartType();
 		// 校验
 		// todo  如果分析目标为空，就抛出请求参数错误异常，并给出提示
-		//ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
+		ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
 		// 如果名称不为空，并且名称长度大于100，就抛出异常，并给出提示
 		ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
+
+
+		/**
+		 * 校验文件
+		 * 校验文件大小和文件后缀名称
+		 */
+		long fileSize = multipartFile.getSize();
+		String originalFilename = multipartFile.getOriginalFilename();
+
+		final long ONE_MB = 1024 * 1024;
+		// 如果文件大于 5 MB ，就抛出异常，并给出提示
+		ThrowUtils.throwIf(fileSize > 5 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件过大");
+		// 如果文件后缀名称不为空，并且文件后缀名称不是 .xlsx 或 .xls ，就抛出异常，并给出提示
+		String suffix = FileUtil.getSuffix(originalFilename);
+		List<String> validFileSuffixList = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
+		ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件格式错误");
+
+		User loginUser = userService.getLoginUser(request);
+
+		redisLimiterManager.doRateLimit("genChartByAi" +  loginUser.getId());
+
+
 		String csvData = ExcelUtils.excelToCsv(multipartFile);
 		Long userId = userService.getLoginUser(request).getId();
 		// 构造用户信息
