@@ -6,13 +6,9 @@ spring:
     # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/bi
+    url: jdbc:mysql://localhost:3306/yu_ai_code_mother
     username: root
     password: 123456
-  redis:
-    database: 1
-    host: localhost
-    port: 6379
 server:
   port: 7878
   servlet:
@@ -37,3 +33,12 @@ mybatis-plus:
       logic-delete-field: isDelete # ????????????
       logic-delete-value: 1 # ?????????? 1?
       logic-not-delete-value: 0 # ?????????? 0?
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://api.deepseek.com
+      api-key: sk-d1f2e749ea6c4b10987c6ee8de669168
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
